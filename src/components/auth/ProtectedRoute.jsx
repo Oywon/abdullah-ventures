@@ -1,6 +1,6 @@
-import { useAuth } from '@clerk/react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { usePortalAccess } from '../../hooks/usePortalAccess';
+import { useAuth } from "@clerk/react";
+import { Navigate, useLocation } from "react-router-dom";
+import { usePortalAccess } from "../../hooks/usePortalAccess";
 
 const hasClerk = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
 
@@ -15,10 +15,10 @@ const loadingScreen = (
   </div>
 );
 
-const ClerkProtectedRoute = ({ children, requireAdmin = false }) => {
+const ClerkProtectedRoute = ({ children, requireAdmin = false, skipProfileCheck = false }) => {
   const { isLoaded, userId } = useAuth();
   const location = useLocation();
-  const { access, loading } = usePortalAccess();
+  const { access, profileCompleted, loading } = usePortalAccess();
 
   if (!isLoaded || loading) {
     return loadingScreen;
@@ -28,19 +28,24 @@ const ClerkProtectedRoute = ({ children, requireAdmin = false }) => {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  if (requireAdmin && !['admin', 'super_admin'].includes(access?.role || '')) {
+  if (!skipProfileCheck && !profileCompleted) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  if (requireAdmin && !["admin", "super_admin"].includes(access?.role || "")) {
     return <Navigate to="/dashboard" replace />;
   }
 
   return children;
 };
 
-const ProtectedRoute = ({ children, requireAdmin = false }) => {
+const ProtectedRoute = ({ children, requireAdmin = false, skipProfileCheck = false }) => {
   if (!hasClerk) {
     return children;
   }
 
-  return <ClerkProtectedRoute requireAdmin={requireAdmin}>{children}</ClerkProtectedRoute>;
+  return <ClerkProtectedRoute requireAdmin={requireAdmin} skipProfileCheck={skipProfileCheck}>{children}</ClerkProtectedRoute>;
 };
 
 export default ProtectedRoute;
+

@@ -34,7 +34,12 @@ const CompanySetup = () => {
             <div className="absolute top-0 right-0 p-4 sm:p-8 opacity-10"><Globe size={140} className="sm:w-[200px] sm:h-[200px]"/></div>
             <h3 className="text-xl font-black italic uppercase mb-4 text-blue-400">Bangladesh Setup Model</h3>
             <p className="text-sm font-light leading-relaxed mb-6">Our share-based model ensures foreign investors fast-track their market entry with 100% legal compliance and a trusted local partner.</p>
-            <button className="bg-blue-600 text-[10px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded hover:bg-blue-700 transition w-full sm:w-auto">Request Consultation</button>
+            <button 
+              onClick={() => window.open('https://wa.me/8801999907883?text=Hi, I would like to request a consultation for company setup in Bangladesh.', '_blank')}
+              className="bg-blue-600 text-[10px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded hover:bg-blue-700 transition w-full sm:w-auto"
+            >
+              Request Consultation
+            </button>
         </div>
       </div>
     </section>

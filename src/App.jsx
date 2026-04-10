@@ -4,20 +4,24 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import Footer from './components/layout/Footer';
 import Navbar from './components/layout/Navbar';
 import WhatsAppButton from './components/layout/WhatsAppButton';
-import Admin from './pages/Admin';
 import Dashboard from './pages/Dashboard';
+import History from './pages/History';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Nodes from './pages/Nodes';
+import RequestService from './pages/RequestService';
 import Signup from './pages/Signup';
 import Tracking from './pages/Tracking';
+import Users from './pages/Users';
+import Onboarding from './pages/Onboarding';
 
 function AppLayout() {
   const location = useLocation();
   const isHomeRoute = location.pathname === '/';
-  const isAuthRoute = ['/login', '/signup'].includes(location.pathname);
+  const isAuthRoute = ['/login', '/signup', '/onboarding'].includes(location.pathname);
   const showFooter = isHomeRoute;
-  const isPortalRoute = ['/dashboard', '/tracking', '/nodes', '/admin'].includes(location.pathname);
+  const isPortalRoute =
+    ['/dashboard', '/request', '/tracking', '/history', '/users', '/nodes'].includes(location.pathname);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -38,10 +42,18 @@ function AppLayout() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route
-          path="/admin"
+          path="/onboarding"
+          element={(
+            <ProtectedRoute skipProfileCheck>
+              <Onboarding />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/users"
           element={(
             <ProtectedRoute requireAdmin>
-              <Admin isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+              <Users isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
             </ProtectedRoute>
           )}
         />
@@ -54,10 +66,26 @@ function AppLayout() {
           )}
         />
         <Route
+          path="/request"
+          element={(
+            <ProtectedRoute>
+              <RequestService isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
           path="/tracking"
           element={(
             <ProtectedRoute>
               <Tracking isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/history"
+          element={(
+            <ProtectedRoute>
+              <History isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
             </ProtectedRoute>
           )}
         />

@@ -1,17 +1,19 @@
 import { NavLink } from 'react-router-dom';
-import { Activity, Globe, Package, Settings, X } from 'lucide-react';
+import { Activity, Archive, ClipboardList, Globe, Package, Users, X } from 'lucide-react';
 import { usePortalAccess } from '../../hooks/usePortalAccess';
 import { canManageCompany } from '../../lib/accessControl';
 
 const baseMenuItems = [
   { to: '/dashboard', label: 'Dashboard', icon: Activity, end: true },
-  { to: '/tracking', label: 'Tracking', icon: Package },
+  { to: '/request', label: 'Request Service', icon: ClipboardList },
+  { to: '/tracking', label: 'Track Requests', icon: Package },
+  { to: '/history', label: 'History', icon: Archive },
   { to: '/nodes', label: 'Nodes', icon: Globe },
 ];
 const DashboardSidebar = ({ isOpen = false, setIsOpen = () => {} }) => {
   const { access } = usePortalAccess();
   const menuItems = canManageCompany(access)
-    ? [...baseMenuItems, { to: '/admin', label: 'Admin', icon: Settings }]
+    ? [...baseMenuItems, { to: '/users', label: 'Users', icon: Users }]
     : baseMenuItems;
 
   return (

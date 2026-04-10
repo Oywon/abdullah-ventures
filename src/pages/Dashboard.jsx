@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import SEO from '../components/SEO';
-import CompanyOverview from '../components/dashboard/CompanyOverview';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
-import ShipmentsTable from '../components/dashboard/ShipmentsTable';
+import ServiceRequestsTable from '../components/dashboard/ServiceRequestsTable';
 import StatsCards from '../components/dashboard/StatsCards';
 import { usePortalAccess } from '../hooks/usePortalAccess';
-import { getPortalSnapshot, subscribeToCompanyData } from '../lib/partnerPortalApi';
+import { getPortalSnapshot, getServiceRequestsForAccess, subscribeToCompanyData } from '../lib/partnerPortalApi';
 
 const emptySnapshot = {
   company: {
@@ -18,7 +17,7 @@ const emptySnapshot = {
   },
   shipments: [],
   stats: [
-    { label: 'Active Shipments', value: '0' },
+    { label: 'Shipments', value: '0' },
     { label: 'Delivered', value: '0' },
     { label: 'Trade Routes', value: '0' },
   ],
@@ -28,25 +27,26 @@ const PortalDashboard = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const { access, loading: loadingAccess } = usePortalAccess();
   const [searchTerm, setSearchTerm] = useState('');
   const [portalSnapshot, setPortalSnapshot] = useState(emptySnapshot);
+  const [serviceRequests, setServiceRequests] = useState([]);
   const [isLoadingSnapshot, setIsLoadingSnapshot] = useState(true);
 
-  const filteredShipments = useMemo(() => {
+  const filteredRequests = useMemo(() => {
     const normalized = searchTerm.trim().toLowerCase();
-    const shipments = portalSnapshot.shipments || [];
+    const requests = serviceRequests || [];
 
     if (!normalized) {
-      return shipments;
+      return requests;
     }
 
-    return shipments.filter(
-      (ship) =>
-        (ship.trackingId || ship.id).toLowerCase().includes(normalized) ||
-        ship.origin.toLowerCase().includes(normalized) ||
-        (ship.destination || '').toLowerCase().includes(normalized) ||
-        ship.status.toLowerCase().includes(normalized) ||
-        (ship.cargoType || '').toLowerCase().includes(normalized)
+    return requests.filter(
+      (request) =>
+        request.id.toLowerCase().includes(normalized) ||
+        request.serviceName.toLowerCase().includes(normalized) ||
+        request.status.toLowerCase().includes(normalized) ||
+        request.requesterName.toLowerCase().includes(normalized) ||
+        request.requesterEmail.toLowerCase().includes(normalized)
     );
-  }, [portalSnapshot.shipments, searchTerm]);
+  }, [serviceRequests, searchTerm]);
 
   useEffect(() => {
     if (loadingAccess) {
@@ -59,20 +59,25 @@ const PortalDashboard = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const loadSnapshot = async () => {
       setIsLoadingSnapshot(true);
 
-      const snapshot = await getPortalSnapshot(access);
+      const [snapshot, requests] = await Promise.all([getPortalSnapshot(access), getServiceRequestsForAccess(access)]);
 
       if (!isMounted) {
         return;
       }
 
       setPortalSnapshot(snapshot);
+      setServiceRequests(requests);
       setIsLoadingSnapshot(false);
 
       unsubscribe = subscribeToCompanyData(snapshot.company.id, async () => {
-        const nextSnapshot = await getPortalSnapshot(access);
+        const [nextSnapshot, nextRequests] = await Promise.all([
+          getPortalSnapshot(access),
+          getServiceRequestsForAccess(access),
+        ]);
 
         if (isMounted) {
           setPortalSnapshot(nextSnapshot);
+          setServiceRequests(nextRequests);
         }
       });
     };
@@ -98,14 +103,12 @@ const PortalDashboard = ({ isSidebarOpen, setIsSidebarOpen }) => {
           </div>
         </div>
 
-        <CompanyOverview company={portalSnapshot.company} />
         <StatsCards stats={portalSnapshot.stats} />
 
-        <ShipmentsTable
-          shipments={filteredShipments}
+        <ServiceRequestsTable
+          requests={filteredRequests}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
-          tableLabel="Live Shipment Tracker"
         />
 
         {(loadingAccess || isLoadingSnapshot) && (

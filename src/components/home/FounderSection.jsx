@@ -1,9 +1,11 @@
+import image from '../../assets/founder.jpg';
+
 const FounderSection = () => (
   <section id="about" className="py-14 sm:py-20 lg:py-24 bg-slate-900 text-white px-4 sm:px-6 lg:px-10">
     <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-8 sm:gap-12 lg:gap-16">
       <div className="w-52 h-52 sm:w-64 sm:h-64 bg-slate-800 rounded-2xl border-2 border-blue-500 overflow-hidden shadow-2xl relative rotate-2">
         <img
-          src="/founder.jpg"
+          src={image}
           alt="CEO Kazi Abdullah Al Mamun"
           className="w-full h-full object-cover grayscale hover:grayscale-0 transition duration-500"
         />

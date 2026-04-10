@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import SEO from '../components/SEO';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
+import { serviceCatalog, serviceStatusOptions } from '../data/serviceCatalog';
 import { usePortalAccess } from '../hooks/usePortalAccess';
 import { canManageCompany } from '../lib/accessControl';
 import {
@@ -12,6 +14,7 @@ import {
   deletePortalUser,
   deleteShipment,
   getAdminSnapshotForAccess,
+  updateServiceRequestProgress,
   updateCompany,
   updatePortalUser,
   updateShipment,
@@ -42,20 +45,40 @@ const emptyUser = {
   companyId: '',
 };
 
-const Admin = ({ isSidebarOpen, setIsSidebarOpen }) => {
+const emptyServiceRequest = {
+  requesterName: '',
+  requesterEmail: '',
+  companyId: '',
+  serviceName: serviceCatalog[0],
+  details: '',
+  status: 'REQUESTED',
+  progressPercent: 0,
+  adminNote: '',
+};
+
+const sectionTitleMap = {
+  all: 'Admin Panel',
+  companies: 'Admin Panel',
+  users: 'Admin Panel',
+};
+
+const Admin = ({ isSidebarOpen, setIsSidebarOpen, section = 'all' }) => {
   const { access, loading: loadingAccess } = usePortalAccess();
-  const [snapshot, setSnapshot] = useState({ companies: [], shipments: [], users: [] });
+  const [snapshot, setSnapshot] = useState({ companies: [], shipments: [], serviceRequests: [], users: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [companyForm, setCompanyForm] = useState(emptyCompany);
   const [shipmentForm, setShipmentForm] = useState(emptyShipment);
   const [userForm, setUserForm] = useState(emptyUser);
+  const [serviceRequestForm, setServiceRequestForm] = useState(emptyServiceRequest);
   const [editingCompanyId, setEditingCompanyId] = useState('');
   const [editingShipmentId, setEditingShipmentId] = useState('');
   const [editingUserId, setEditingUserId] = useState('');
+  const [editingServiceRequestId, setEditingServiceRequestId] = useState('');
   const [isSavingCompany, setIsSavingCompany] = useState(false);
   const [isSavingShipment, setIsSavingShipment] = useState(false);
   const [isSavingUser, setIsSavingUser] = useState(false);
+  const [isSavingServiceRequest, setIsSavingServiceRequest] = useState(false);
 
   const companyOptions = useMemo(
     () => snapshot.companies.map((company) => ({ id: company.id, label: company.companyName })),
@@ -63,6 +86,10 @@ const Admin = ({ isSidebarOpen, setIsSidebarOpen }) => {
   );
 
   const canManage = canManageCompany(access);
+  const showCompanies = false;
+  const showServices = false;
+  const showShipments = false;
+  const showUsers = false;
 
   const refreshSnapshot = async () => {
     if (!access) {
@@ -120,6 +147,13 @@ const Admin = ({ isSidebarOpen, setIsSidebarOpen }) => {
       ...current,
       companyId: current.companyId || access.companyId || '',
     }));
+
+    setServiceRequestForm((current) => ({
+      ...current,
+      requesterName: current.requesterName || access.companyName || 'Portal User',
+      requesterEmail: current.requesterEmail || access.email || '',
+      companyId: current.companyId || access.companyId || '',
+    }));
   }, [access]);
 
   const handleCompanyChange = (event) => {
@@ -135,6 +169,11 @@ const Admin = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const handleUserChange = (event) => {
     const { name, value } = event.target;
     setUserForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleServiceRequestChange = (event) => {
+    const { name, value } = event.target;
+    setServiceRequestForm((current) => ({ ...current, [name]: value }));
   };
 
   const handleCompanySubmit = async (event) => {
@@ -206,6 +245,43 @@ const Admin = ({ isSidebarOpen, setIsSidebarOpen }) => {
     }
   };
 
+  const handleServiceRequestSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!editingServiceRequestId) {
+      setError('Select a request from the list to update its progress.');
+      return;
+    }
+
+    setIsSavingServiceRequest(true);
+    setError('');
+
+    try {
+      await updateServiceRequestProgress(
+        editingServiceRequestId,
+        {
+          status: serviceRequestForm.status,
+          progressPercent: serviceRequestForm.progressPercent,
+          adminNote: serviceRequestForm.adminNote,
+        },
+        access
+      );
+
+      await refreshSnapshot();
+      setServiceRequestForm({
+        ...emptyServiceRequest,
+        requesterName: access?.companyName || 'Portal User',
+        requesterEmail: access?.email || '',
+        companyId: access?.role === 'super_admin' ? '' : access?.companyId || '',
+      });
+      setEditingServiceRequestId('');
+    } catch (submitError) {
+      setError(submitError.message || 'Unable to save request progress.');
+    } finally {
+      setIsSavingServiceRequest(false);
+    }
+  };
+
   const startEditCompany = (company) => {
     setEditingCompanyId(company.id);
     setCompanyForm({
@@ -237,6 +313,20 @@ const Admin = ({ isSidebarOpen, setIsSidebarOpen }) => {
       email: user.email,
       role: user.role,
       companyId: user.companyId || '',
+    });
+  };
+
+  const startEditServiceRequest = (request) => {
+    setEditingServiceRequestId(request.id);
+    setServiceRequestForm({
+      requesterName: request.requesterName,
+      requesterEmail: request.requesterEmail,
+      companyId: request.companyId || '',
+      serviceName: request.serviceName,
+      details: request.details,
+      status: request.status,
+      progressPercent: request.progressPercent,
+      adminNote: request.adminNote || '',
     });
   };
 
@@ -306,10 +396,30 @@ const Admin = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
       <div className="flex-1 p-4 sm:p-6 lg:p-12 text-slate-800">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-8 sm:mb-12 border-b-2 border-blue-600 pb-4">
-          <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter italic">Admin Panel</h1>
+          <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter italic">{sectionTitleMap[section] || 'Admin Panel'}</h1>
           <div className="bg-slate-900 text-white px-4 py-1 rounded text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] w-fit">
-            Role-Based Company Management
+            Request Management
           </div>
+        </div>
+
+        <div className="mb-6 flex flex-wrap gap-2">
+          {[
+            { to: '/admin', label: 'Overview' },
+          ].map((tab) => (
+            <NavLink
+              key={tab.to}
+              to={tab.to}
+              className={({ isActive }) =>
+                `rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] ${
+                  isActive
+                    ? 'border-blue-600 bg-blue-600 text-white'
+                    : 'border-slate-200 bg-white text-slate-500 hover:text-slate-900'
+                }`
+              }
+            >
+              {tab.label}
+            </NavLink>
+          ))}
         </div>
 
         {error && (
@@ -318,8 +428,25 @@ const Admin = ({ isSidebarOpen, setIsSidebarOpen }) => {
           </div>
         )}
 
-        <div className="grid xl:grid-cols-2 gap-6 mb-8 sm:mb-12">
-          {access?.role === 'super_admin' && (
+        <section className="bg-white rounded-[28px] shadow-lg border border-slate-200 p-6 sm:p-8 mb-8 sm:mb-12">
+          <p className="text-[10px] font-black uppercase tracking-[0.35em] text-blue-600 mb-2">Requests</p>
+          <h2 className="text-xl sm:text-2xl font-black italic uppercase tracking-tight text-slate-900 mb-4">
+            Update Request In Tracking
+          </h2>
+          <p className="text-sm text-slate-500 leading-7 mb-5">
+            Request creation is handled by users. Admin progress updates are now handled only from the Tracking modal.
+          </p>
+          <NavLink
+            to="/tracking"
+            className="inline-flex rounded-full bg-blue-600 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-slate-900"
+          >
+            Open Tracking
+          </NavLink>
+        </section>
+
+        {(showCompanies || showShipments) && (
+          <div className="grid xl:grid-cols-2 gap-6 mb-8 sm:mb-12">
+            {showCompanies && access?.role === 'super_admin' && (
             <section className="bg-white rounded-[28px] shadow-lg border border-slate-200 p-6 sm:p-8">
               <div className="flex items-center justify-between gap-3 mb-6">
                 <div>
@@ -396,14 +523,22 @@ const Admin = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 </button>
               </form>
             </section>
-          )}
+            )}
 
-          <section className="bg-white rounded-[28px] shadow-lg border border-slate-200 p-6 sm:p-8">
+            {showCompanies && access?.role !== 'super_admin' && (
+              <section className="bg-white rounded-[28px] shadow-lg border border-slate-200 p-6 sm:p-8">
+                <h2 className="text-xl font-black italic uppercase tracking-tight text-slate-900 mb-4">Company Management</h2>
+                <p className="text-sm text-slate-500 leading-7">Only super admins can manage global company records.</p>
+              </section>
+            )}
+
+            {showShipments && (
+              <section className="bg-white rounded-[28px] shadow-lg border border-slate-200 p-6 sm:p-8">
             <div className="flex items-center justify-between gap-3 mb-6">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.35em] text-blue-600 mb-2">Shipments</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.35em] text-blue-600 mb-2">Service Operations</p>
                 <h2 className="text-2xl font-black italic uppercase tracking-tight text-slate-900">
-                  {editingShipmentId ? 'Edit Shipment' : 'Add Shipment'}
+                    {editingShipmentId ? 'Edit Shipment Service' : 'Add Shipment Service'}
                 </h2>
               </div>
               <button
@@ -502,11 +637,15 @@ const Admin = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 {isSavingShipment ? 'Saving...' : editingShipmentId ? 'Update Shipment' : 'Add Shipment'}
               </button>
             </form>
-          </section>
-        </div>
+              </section>
+            )}
+          </div>
+        )}
 
-        <div className="grid xl:grid-cols-2 gap-6 mb-8 sm:mb-12">
-          <section className="bg-white rounded-[28px] shadow-lg border border-slate-200 p-6 sm:p-8">
+        {(showCompanies || showShipments) && (
+          <div className="grid xl:grid-cols-2 gap-6 mb-8 sm:mb-12">
+            {showCompanies && (
+              <section className="bg-white rounded-[28px] shadow-lg border border-slate-200 p-6 sm:p-8">
             <h2 className="text-xl font-black italic uppercase tracking-tight text-slate-900 mb-6">Company Records</h2>
             <div className="space-y-4">
               {loading ? (
@@ -551,10 +690,12 @@ const Admin = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 <p className="text-sm text-slate-500">No companies added yet.</p>
               )}
             </div>
-          </section>
+              </section>
+            )}
 
-          <section className="bg-white rounded-[28px] shadow-lg border border-slate-200 p-6 sm:p-8">
-            <h2 className="text-xl font-black italic uppercase tracking-tight text-slate-900 mb-6">Shipment Records</h2>
+            {showShipments && (
+              <section className="bg-white rounded-[28px] shadow-lg border border-slate-200 p-6 sm:p-8">
+            <h2 className="text-xl font-black italic uppercase tracking-tight text-slate-900 mb-6">Shipment Service Records</h2>
             <div className="space-y-4">
               {loading ? (
                 <p className="text-sm text-slate-500">Loading shipments...</p>
@@ -595,10 +736,164 @@ const Admin = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 <p className="text-sm text-slate-500">No shipments added yet.</p>
               )}
             </div>
-          </section>
-        </div>
+              </section>
+            )}
+          </div>
+        )}
 
-        <section className="bg-white rounded-[28px] shadow-lg border border-slate-200 p-6 sm:p-8">
+        {showServices && (
+          <section className="bg-white rounded-[28px] shadow-lg border border-slate-200 p-6 sm:p-8 mb-8 sm:mb-12">
+          <div className="grid xl:grid-cols-[0.95fr_1.05fr] gap-6">
+            <div>
+              <div className="flex items-center justify-between gap-3 mb-6">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.35em] text-blue-600 mb-2">Services</p>
+                  <h2 className="text-2xl font-black italic uppercase tracking-tight text-slate-900">Update Request</h2>
+                </div>
+              </div>
+
+              <form className="space-y-4" onSubmit={handleServiceRequestSubmit}>
+                <input
+                  name="requesterName"
+                  value={serviceRequestForm.requesterName}
+                  onChange={handleServiceRequestChange}
+                  placeholder="Requester name"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold focus:outline-none focus:border-blue-600"
+                  required
+                  disabled
+                />
+                <input
+                  name="requesterEmail"
+                  type="email"
+                  value={serviceRequestForm.requesterEmail}
+                  onChange={handleServiceRequestChange}
+                  placeholder="Requester email"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold focus:outline-none focus:border-blue-600"
+                  required
+                  disabled
+                />
+                <select
+                  name="companyId"
+                  value={serviceRequestForm.companyId}
+                  onChange={handleServiceRequestChange}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold focus:outline-none focus:border-blue-600"
+                  required
+                  disabled
+                >
+                  <option value="">Select company</option>
+                  {companyOptions.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  name="serviceName"
+                  value={serviceRequestForm.serviceName}
+                  onChange={handleServiceRequestChange}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold focus:outline-none focus:border-blue-600"
+                  required
+                  disabled
+                >
+                  {serviceCatalog.map((service) => (
+                    <option key={service} value={service}>
+                      {service}
+                    </option>
+                  ))}
+                </select>
+                <textarea
+                  name="details"
+                  value={serviceRequestForm.details}
+                  onChange={handleServiceRequestChange}
+                  placeholder="Request details"
+                  rows={4}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold focus:outline-none focus:border-blue-600"
+                  disabled
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <select
+                    name="status"
+                    value={serviceRequestForm.status}
+                    onChange={handleServiceRequestChange}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold focus:outline-none focus:border-blue-600"
+                  >
+                    {serviceStatusOptions.map((status) => (
+                      <option key={status} value={status}>
+                        {status.replace('_', ' ')}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    name="progressPercent"
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={serviceRequestForm.progressPercent}
+                    onChange={handleServiceRequestChange}
+                    placeholder="Progress %"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold focus:outline-none focus:border-blue-600"
+                    required
+                  />
+                </div>
+                <textarea
+                  name="adminNote"
+                  value={serviceRequestForm.adminNote}
+                  onChange={handleServiceRequestChange}
+                  placeholder="Admin note for user"
+                  rows={3}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold focus:outline-none focus:border-blue-600"
+                />
+
+                <button
+                  type="submit"
+                  disabled={isSavingServiceRequest || !editingServiceRequestId}
+                  className="w-full rounded-xl bg-blue-600 px-4 py-3 text-white text-[11px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 disabled:opacity-60"
+                >
+                  {isSavingServiceRequest ? 'Saving...' : 'Update Progress'}
+                </button>
+              </form>
+            </div>
+
+            <div>
+              <h2 className="text-xl font-black italic uppercase tracking-tight text-slate-900 mb-6">User-Wise Requests</h2>
+              <div className="space-y-4">
+                {loading ? (
+                  <p className="text-sm text-slate-500">Loading requests...</p>
+                ) : snapshot.serviceRequests.length > 0 ? (
+                  snapshot.serviceRequests.map((request) => (
+                    <div key={request.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-black uppercase tracking-[0.12em] text-slate-900">{request.serviceName}</p>
+                          <p className="text-xs text-slate-500 mt-2">{request.requesterName} • {request.requesterEmail}</p>
+                          <p className="text-xs text-slate-500 mt-1">{request.companyName || 'No Company'}</p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-600 mt-3">
+                            {request.status.replace('_', ' ')} • {request.progressPercent}%
+                          </p>
+                          {request.adminNote && <p className="text-xs text-slate-500 mt-2">{request.adminNote}</p>}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => startEditServiceRequest(request)}
+                          className="rounded-full border border-slate-200 p-2 text-slate-500 hover:text-blue-600"
+                          aria-label="Edit request"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-500">No service requests added yet.</p>
+                )}
+              </div>
+            </div>
+          </div>
+          </section>
+        )}
+
+        {showUsers && (
+          <section className="bg-white rounded-[28px] shadow-lg border border-slate-200 p-6 sm:p-8">
           <div className="grid xl:grid-cols-[0.95fr_1.05fr] gap-6">
             <div>
               <div className="flex items-center justify-between gap-3 mb-6">
@@ -722,7 +1017,8 @@ const Admin = ({ isSidebarOpen, setIsSidebarOpen }) => {
               </div>
             </div>
           </div>
-        </section>
+          </section>
+        )}
       </div>
     </div>
   );

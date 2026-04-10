@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/react';
+import { Show, UserButton } from '@clerk/react';
 import { Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -42,28 +42,24 @@ const ClerkAuthControls = ({ mobile = false, onAction = () => {} }) => {
   return (
     <>
       <Show when="signed-out">
-        <SignInButton>
-          <button
-            type="button"
-            onClick={onAction}
-            className={mobile ? 'text-left text-slate-200 hover:text-blue-400' : 'hover:text-blue-400 transition'}
-          >
-            Login
-          </button>
-        </SignInButton>
-        <SignUpButton>
-          <button
-            type="button"
-            onClick={onAction}
-            className={
-              mobile
-                ? 'bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 transition border border-blue-400 text-center'
-                : 'bg-blue-600 px-3 sm:px-5 md:px-6 py-2 rounded-full hover:bg-blue-700 transition border border-blue-400 shadow-lg whitespace-nowrap'
-            }
-          >
-            Partner Portal
-          </button>
-        </SignUpButton>
+        <Link
+          to="/login"
+          onClick={onAction}
+          className={mobile ? 'text-slate-200 hover:text-blue-400' : 'hover:text-blue-400 transition'}
+        >
+          Login
+        </Link>
+        <Link
+          to="/signup"
+          onClick={onAction}
+          className={
+            mobile
+              ? 'bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 transition border border-blue-400 text-center'
+              : 'bg-blue-600 px-3 sm:px-5 md:px-6 py-2 rounded-full hover:bg-blue-700 transition border border-blue-400 shadow-lg whitespace-nowrap'
+          }
+        >
+          Sign Up
+        </Link>
       </Show>
       <Show when="signed-in">
         <div className={mobile ? 'flex items-center justify-between' : 'flex items-center gap-3'}>
@@ -134,7 +130,7 @@ const Navbar = ({ showSidebarToggle = false, onSidebarToggle, isHomeRoute = fals
   };
 
   return (
-    <nav ref={navRef} className="relative flex justify-between items-center px-4 sm:px-6 lg:px-10 py-4 sm:py-5 bg-slate-900 text-white sticky top-0 z-50 shadow-2xl border-b border-blue-900 gap-4">
+    <nav ref={navRef} className="flex justify-between items-center px-4 sm:px-6 lg:px-10 py-4 sm:py-5 bg-slate-900 text-white sticky top-0 z-50 shadow-2xl border-b border-blue-900 gap-4">
       <Link
         to="/"
         className="text-lg sm:text-2xl font-black tracking-tighter text-blue-500 italic uppercase leading-tight"

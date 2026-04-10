@@ -80,6 +80,68 @@ set company_id = excluded.company_id,
     status = excluded.status,
     eta_delivery = excluded.eta_delivery;
 
+insert into public.company_service_requests (
+  company_id,
+  requester_name,
+  requester_email,
+  contact_number,
+  service_name,
+  service_details,
+  status,
+  progress_percent,
+  admin_note
+)
+select
+  c.id,
+  'Partner Operations Team',
+  'mdsalmantd5@gmail.com',
+  '+8801700000001',
+  'Licensing & regulatory approvals',
+  'Kickstart support needed for permits, licensing workflow, and legal liaison setup.',
+  'IN_PROGRESS',
+  65,
+  'Compliance checklist has been shared with the requester.'
+from public.companies c
+where c.contact_email = 'mdsalmantd5@gmail.com'
+and not exists (
+  select 1
+  from public.company_service_requests csr
+  where csr.company_id = c.id
+    and csr.requester_email = 'mdsalmantd5@gmail.com'
+    and csr.service_name = 'Licensing & regulatory approvals'
+);
+
+insert into public.company_service_requests (
+  company_id,
+  requester_name,
+  requester_email,
+  contact_number,
+  service_name,
+  service_details,
+  status,
+  progress_percent,
+  admin_note
+)
+select
+  c.id,
+  'John Doe',
+  'john@abdullahventures.com',
+  '+8801700000002',
+  'HR, staffing & workforce onboarding',
+  'Support required for hiring, onboarding plan, and initial SOP handover.',
+  'REQUESTED',
+  15,
+  'Discovery call scheduled for next week.'
+from public.companies c
+where c.contact_email = 'mdsalmantd5@gmail.com'
+and not exists (
+  select 1
+  from public.company_service_requests csr
+  where csr.company_id = c.id
+    and csr.requester_email = 'john@abdullahventures.com'
+    and csr.service_name = 'HR, staffing & workforce onboarding'
+);
+
 insert into public.company_shipments (
   company_id,
   tracking_id,
