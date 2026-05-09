@@ -5,6 +5,11 @@ import { Activity, Archive, ClipboardList, Globe, Package, Users, X } from 'luci
 import { usePortalAccess } from '../../hooks/usePortalAccess';
 import { canManageCompany } from '../../lib/accessControl';
 
+type DashboardSidebarProps = {
+  isOpen?: boolean;
+  setIsOpen?: (open: boolean) => void;
+};
+
 const baseMenuItems = [
   { to: '/dashboard', label: 'Dashboard', icon: Activity, end: true },
   { to: '/request', label: 'Request Service', icon: ClipboardList },
@@ -12,7 +17,7 @@ const baseMenuItems = [
   { to: '/history', label: 'History', icon: Archive },
   { to: '/nodes', label: 'Nodes', icon: Globe },
 ];
-const DashboardSidebar = ({ isOpen = false, setIsOpen = () => {} }) => {
+const DashboardSidebar = ({ isOpen = false, setIsOpen = () => {} }: DashboardSidebarProps) => {
   const { access } = usePortalAccess();
   const pathname = usePathname();
   const menuItems = canManageCompany(access)

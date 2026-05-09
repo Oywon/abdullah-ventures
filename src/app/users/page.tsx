@@ -137,7 +137,7 @@ const Users = ({ isSidebarOpen, setIsSidebarOpen }) => {
                   <tbody className="text-xs font-bold">
                     {isLoading ? (
                       <tr>
-                        <td colSpan="9" className="p-8 text-center text-slate-500 text-sm">
+                        <td colSpan={9} className="p-8 text-center text-slate-500 text-sm">
                           Loading users...
                         </td>
                       </tr>
@@ -191,7 +191,7 @@ const Users = ({ isSidebarOpen, setIsSidebarOpen }) => {
                       })
                     ) : (
                       <tr>
-                        <td colSpan="9" className="p-8 text-center text-slate-500 text-sm">
+                        <td colSpan={9} className="p-8 text-center text-slate-500 text-sm">
                           No users found.
                         </td>
                       </tr>

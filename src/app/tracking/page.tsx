@@ -213,7 +213,7 @@ const Tracking = ({ isSidebarOpen, setIsSidebarOpen }) => {
                   min={0}
                   max={100}
                   value={selectedProgressPercent}
-                  onChange={(event) => setSelectedProgressPercent(event.target.value)}
+                  onChange={(event) => setSelectedProgressPercent(Number(event.target.value))}
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold focus:outline-none focus:border-blue-600"
                 />
                 {selectedStatus === 'COMPLETED' && (
